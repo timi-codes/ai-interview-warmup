@@ -2,9 +2,19 @@
 import React from "react";
 import Image from "next/image";
 import { TypeAnimation } from "react-type-animation";
+import { useRouter } from 'next/navigation'
+
+import axios from "axios";
+
+interface UserSession {
+  session_id: string;
+  first_name: string;
+  last_name: string;
+  roles: string[]
+}
 
 export default function Home() {
-
+  const router = useRouter();
   const [currentFile, setCurrentFile] = React.useState<File>();
   const [progress, setProgress] = React.useState<number>(0);
 
@@ -12,12 +22,36 @@ export default function Home() {
     const { files } = event.target;
     const selectedFiles = files as FileList;
     setCurrentFile(selectedFiles?.[0]);
-    setProgress(0);
+    uploadFile(selectedFiles?.[0])
+  };
+
+  const uploadFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file as Blob);
+
+    const config = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent: ProgressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        setProgress(percentCompleted);
+      },
+    };
+
+    try {
+      const response = await axios.post('http://0.0.0.0:8000/api/session', formData, config);
+      const { data } = response;
+      localStorage.setItem('session', JSON.stringify(data));
+      router.push('/roles?session_id=' + data.session_id);
+    } catch (error) {
+      console.error('error', error);
+    }
   };
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
+      <main className="flex flex-col gap-8 row-start-2 items-center ">
 
         <div className="flex items-center flex-col">
           <h1 className="text-xl mb-4 font-bold">Interview Warmup</h1>
@@ -56,20 +90,24 @@ export default function Home() {
 
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF (max. 5mb)</p>
           </div>
-
-          {/* <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-white text-black gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Start Practising
-          </a> */}
         </div>
 
         {
           currentFile && (
-            <p className="text-sm text-center">Uploading Resume: {currentFile.name.slice(0, 40)}...</p>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="animate-spin"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
           )
         }
       </main>
