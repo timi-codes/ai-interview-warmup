@@ -3,49 +3,44 @@ import React from "react";
 import Image from "next/image";
 import { TypeAnimation } from "react-type-animation";
 import { useRouter } from 'next/navigation'
+import { toast } from "sonner"
+import axios, { AxiosError } from "axios";
 
-import axios from "axios";
-
-interface UserSession {
-  session_id: string;
-  first_name: string;
-  last_name: string;
-  roles: string[]
-}
 
 export default function Home() {
   const router = useRouter();
-  const [currentFile, setCurrentFile] = React.useState<File>();
-  const [progress, setProgress] = React.useState<number>(0);
+
+  const uploadFileRef = React.useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = React.useState<boolean>(false);
 
   const selectFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { files } = event.target;
     const selectedFiles = files as FileList;
-    setCurrentFile(selectedFiles?.[0]);
     uploadFile(selectedFiles?.[0])
   };
 
   const uploadFile = async (file: File) => {
+    setUploading(true)
     const formData = new FormData();
     formData.append('file', file as Blob);
 
-    const config = {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: (progressEvent: ProgressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        setProgress(percentCompleted);
-      },
-    };
-
     try {
-      const response = await axios.post('http://0.0.0.0:8000/api/session', formData, config);
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/session`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       const { data } = response;
       localStorage.setItem('session', JSON.stringify(data));
       router.push('/roles?session_id=' + data.session_id);
-    } catch (error) {
-      console.error('error', error);
+    } catch (e) {
+      setUploading(false);
+      const error = e as AxiosError<{ detail: string }>;
+
+      if (uploadFileRef.current) {
+        uploadFileRef.current.value = '';
+      }
+      toast(error.response?.data.detail)
     }
   };
 
@@ -76,7 +71,7 @@ export default function Home() {
             <div
               className="relative rounded-full transition-colors flex items-center justify-center bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
             >
-              <input accept="application/pdf" type="file" id="file_input" className="opacity-0 absolute top-0 bottom-0 right-0 left-0" onChange={selectFile} />
+              <input ref={uploadFileRef} accept="application/pdf" type="file" id="file_input" className="opacity-0 absolute top-0 bottom-0 right-0 left-0" onChange={selectFile} />
               <Image
                 className="dark:invert"
                 src="https://nextjs.org/icons/file.svg"
@@ -93,7 +88,7 @@ export default function Home() {
         </div>
 
         {
-          currentFile && (
+          uploading && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"

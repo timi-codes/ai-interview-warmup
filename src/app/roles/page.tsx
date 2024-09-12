@@ -1,13 +1,9 @@
 "use client"
 import React from "react";
 import Image from "next/image";
-import { TypeAnimation } from "react-type-animation";
 import { ChevronRight } from "lucide-react"
-
 import { Label } from "@/components/ui/label"
-
-import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface UserSession {
   session_id: string;
@@ -18,8 +14,11 @@ interface UserSession {
 
 export default function Roles() {
   const router = useRouter();
+  const searchParams = useSearchParams()
 
   const [roles, setRoles] = React.useState<string[]>();
+
+  const session_id = searchParams.get('session_id')
 
   React.useEffect(() => { 
     const session = localStorage.getItem('session');
@@ -28,10 +27,13 @@ export default function Roles() {
     }
 
     const userSession: UserSession = JSON.parse(session ?? '');
-    console.log("==>", userSession)
     setRoles(userSession.possible_roles)
 
   }, []);
+
+  const selectRole = (role: string) => {
+    router.push(`/ready?session_id=${session_id}&role=${role}`);
+  }
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
@@ -42,11 +44,15 @@ export default function Roles() {
 
           <div className="mt-6">
             {
-              roles?.map((role, index) => (
-                <div key={role} className="flex justify-between	 bg-[#1a1a1a] hover:opacity-60 py-4 px-4 my-3 rounded-md w-full cursor-pointer">
+              roles?.map((role) => (
+                <button
+                  key={role}
+                  className="flex justify-between bg-[#1a1a1a] hover:opacity-60 py-4 px-4 my-3 rounded-md w-full"
+                  onClick={()=>selectRole(role)}
+                >
                   <Label>{role}</Label>
                   <ChevronRight size={16} className="ml-6"/>
-                </div>
+                </button>
               ))
             }
           </div>
