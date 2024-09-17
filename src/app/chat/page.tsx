@@ -17,6 +17,7 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils";
+import DotVisualizer from "@/components/dot-visualizer";
 
 interface UserSession {
     session_id: string;
@@ -75,21 +76,22 @@ export default function Roles() {
     if (!size.height || !size.width) {
         return null;
     }
+
     const isLandscape = size.height <= size.width;
-    const ratio = isLandscape ? size.width / size.height : size.height / size.width;
+    const ratio = isLandscape ? (size.width - 300) / (size.height - 40) : size.height / size.width;
 
-    React.useEffect(() => {
-        const session = localStorage.getItem('session');
-        if (!session) {
-            router.push('/');
-        }
+    // React.useEffect(() => {
+    //     const session = localStorage.getItem('session');
+    //     if (!session) {
+    //         router.push('/');
+    //     }
 
-        const userSession: UserSession = JSON.parse(session ?? '');
-        setSession({
-            ...userSession,
-            selected_role: searchParams.get('role')
-        });
-    }, [router]);
+    //     const userSession: UserSession = JSON.parse(session ?? '');
+    //     setSession({
+    //         ...userSession,
+    //         selected_role: searchParams.get('role')
+    //     });
+    // }, []);
 
     const selectInterviewStyle = (style: InterviewStyle) => {
         setInterviewStyle(style);
@@ -99,13 +101,19 @@ export default function Roles() {
         <main className="flex flex-col h-screen relative px-6 pt-6">
             <div className="flex space-x-6">
                 <div className="relative rounded-md box-border overflow-hidden">
+                    <div className="flex items-center absolute text-lg font-bold px-6 py-5 bottom-0">
+                        <h1>David Tejumola</h1>
+                        <div className="ml-2">
+                            <DotVisualizer />
+                        </div>
+                    </div>
                     <Webcam
                         height={size.height || 0}
                         width={size.width || 0}
                         videoConstraints={{ facingMode: 'user', aspectRatio: ratio }}
                     />
                 </div>
-                <div className="bg-[#ffffff] rounded-md ">
+                <div className="bg-[#ffffff] rounded-md w-[400px]">
                     <div className="py-2 px-4">
                         <h1 className="text-black">Live Transcript</h1>
                     </div>
@@ -122,6 +130,9 @@ export default function Roles() {
                         }
                     </div>
                 </div>
+            </div>
+            <div className="h-10 mt-5">
+                <h1 className="text-xl">Fullstack Interview Warmup</h1>
             </div>
         </main>
     );
