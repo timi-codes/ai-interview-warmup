@@ -1,7 +1,7 @@
 "use client"
 import React from "react";
 import Image from "next/image";
-import { LayoutList, Video } from "lucide-react"
+import { LayoutList, Bot, Mic, Check } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import Webcam from "react-webcam";
@@ -72,6 +72,8 @@ export default function Roles() {
 
     const [interviewStyle, setInterviewStyle] = React.useState<InterviewStyle>('default');
     const [session, setSession] = React.useState<UserSession>();
+    const [isAnswering, setIsAnswering] = React.useState(false);
+
     const size = useWindowSize();
     if (!size.height || !size.width) {
         return null;
@@ -100,12 +102,16 @@ export default function Roles() {
     return (
         <main className="flex flex-col h-screen relative px-6 pt-6">
             <div className="flex space-x-6">
-                <div className="relative rounded-md box-border overflow-hidden">
-                    <div className="flex items-center absolute text-lg font-bold px-6 py-5 bottom-0">
-                        <h1>David Tejumola</h1>
+                <div className={cn("relative rounded-md box-border overflow-hidden", isAnswering && "border-8")}>
+                    <div className="flex items-center absolute text-lg font-bold px-6 py-3 bottom-0">
+                        <h1 className="font-bold">David Tejumola</h1>
                         <div className="ml-2">
                             <DotVisualizer />
                         </div>
+                    </div>
+                    <div className="absolute flex justify-center space-x-2 bottom-0 right-0 items-center rounded-md px-4 py-2 m-3 shadow-sm	bg-black">
+                        <Bot size={18} strokeWidth={3} />
+                        <h2 className="text-sm font-bold">Judith</h2>
                     </div>
                     <Webcam
                         height={size.height || 0}
@@ -115,7 +121,7 @@ export default function Roles() {
                 </div>
                 <div className="bg-[#ffffff] rounded-md w-[400px]">
                     <div className="py-2 px-4">
-                        <h1 className="text-black">Live Transcript</h1>
+                        <h1 className="text-black font-bold py-2">Transcript</h1>
                     </div>
                     <div>
                         {
@@ -131,9 +137,21 @@ export default function Roles() {
                     </div>
                 </div>
             </div>
-            <div className="h-10 mt-5">
-                <h1 className="text-xl">Fullstack Interview Warmup</h1>
+
+            <div className="flex items-center h-20">
+                <h1 className="text-lg">Fullstack Interview Warmup</h1>
+                <Button
+                    className="absolute space-x-1 flex justify-between items-center text-white px-[24px] py-[10px] rounded-sm left-[40%]"
+                    onClick={() => setIsAnswering(!isAnswering)}
+                >
+    
+                    {
+                        isAnswering ? <Check size={18} strokeWidth={3} /> : <Mic size={18} strokeWidth={3} /> 
+                    }
+                    <h2 className="text-sm font-bold">{isAnswering ? "Done" : "Answer"}</h2>
+                </Button>
             </div>
+
         </main>
     );
 }
