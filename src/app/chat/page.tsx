@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import Webcam from "react-webcam";
 import { useWindowSize } from "@uidotdev/usehooks";
+import { io, Socket } from 'socket.io-client';
 
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -65,14 +66,32 @@ const videoConstraints = {
 
 
 export default function Roles() {
-
-
     const router = useRouter();
     const searchParams = useSearchParams()
 
-    const [interviewStyle, setInterviewStyle] = React.useState<InterviewStyle>('default');
     const [session, setSession] = React.useState<UserSession>();
     const [isAnswering, setIsAnswering] = React.useState(false);
+    const initializedRef = React.useRef(false);
+    const socketRef = React.useRef<Socket | null>(null);
+    const [transcripts, setTranscripts] = React.useState<string[]>([]);
+
+    React.useEffect(() => {
+        const socket = io('http://0.0.0.0:8000', {
+            transports: ["websocket"],
+            reconnection: true,
+        });
+        socketRef.current = socket;
+
+        socketRef.current.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+            }
+        };
+    }, []);
 
     const size = useWindowSize();
     if (!size.height || !size.width) {
@@ -95,9 +114,25 @@ export default function Roles() {
     //     });
     // }, []);
 
-    const selectInterviewStyle = (style: InterviewStyle) => {
-        setInterviewStyle(style);
-    }
+    // const initializeRoom = React.useCallback(async () => {
+    //     try {
+    //         if (initializedRef.current) return
+    //         console.log('Initializing room...');
+
+    //         if (socketRef.current) {
+    //             socketRef.current.emit('join', { code: interviewCode });
+
+    //             audioRef.current = new Audio("/assets/join_call.mp3");
+    //             await audioRef.current.play()
+    //         }
+
+    //     } catch (e) {
+    //         console.error('Error initializing room: ', e);
+    //     }
+    // }, []);
+
+   
+
 
     return (
         <main className="flex flex-col h-screen relative px-6 pt-6">
