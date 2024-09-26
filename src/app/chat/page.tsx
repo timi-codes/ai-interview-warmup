@@ -34,12 +34,6 @@ interface Transcript {
     text: string;
 }
 
-const videoConstraints = {
-    width: 1880,
-    height: 1000,
-    facingMode: "user"
-};
-
 
 export default function Roles() {
     const router = useRouter();
@@ -52,30 +46,29 @@ export default function Roles() {
     const [transcripts, setTranscripts] = React.useState<Transcript[]>([]);
 
     const initializeRoom = React.useCallback(async () => {
-        initializedRef.current = true;
+        if (initializedRef.current) return;
+        
         const session_id = searchParams.get('session_id');
 
         try {
-            if (socketRef.current?.connected) {
-                socketRef.current.emit('join', { session_id: session_id });
-            }
+            socketRef.current?.emit('join', { session_id: session_id });
         } catch (e) {
             console.error('Error initializing room: ', e);
         }
     }, []);
 
     React.useEffect(() => {
-        const socket = io(process.env.NEXT_PUBLIC_API_URL ??'http://0.0.0.0:8000', {
+        console.log('Setting up socket connection');
+        const socket = io(process.env.NEXT_PUBLIC_API_URL ?? 'http://0.0.0.0:8000', {
             transports: ["websocket"],
             reconnection: true,
         });
         socketRef.current = socket;
 
         socketRef.current.on('connect', () => {
-            // if(!initializedRef.current) {
-                initializeRoom();
-            // }
             console.log('Connected to server');
+            initializeRoom();
+            initializedRef.current = true;
         });
 
         socketRef.current.on('disconnect', () => {
@@ -83,30 +76,25 @@ export default function Roles() {
         });
 
         socketRef.current.on('chat', (data) => {
-            console.log('chat', data);
-            // setTranscripts(prevTranscripts => [...prevTranscripts, {
-            //     role: data.role as Role,
-            //     text: data.transcript
-            // }]);
+            console.log('Received chat event:', data);
+            setTranscripts(prevTranscripts => [...prevTranscripts, {
+                role: data.role as Role,
+                text: data.transcript
+            }]);
         });
 
-        // return () => {
-        //     if (socketRef.current) {
-        //         socketRef.current.disconnect();
-        //     }
-        // };
+        // Debug: Log all incoming events
+        socketRef.current.onAny((eventName, ...args) => {
+            console.log(`Received event: ${eventName}`, args);
+        });
+
+        return () => {
+            if (socketRef.current) {
+                console.log('Cleaning up socket connection');
+                socketRef.current.disconnect();
+            }
+        };
     }, [initializeRoom]);
-
-    React.useEffect(() => {
-        if (!socketRef.current) return;
-        socketRef.current.on('chat', (data) => {
-            console.log('chat', data);
-            // setTranscripts(prevTranscripts => [...prevTranscripts, {
-            //     role: data.role as Role,
-            //     text: data.transcript
-            // }]);
-        });
-    }, [])
 
 
 
@@ -116,20 +104,7 @@ export default function Roles() {
     }
 
     const isLandscape = size.height <= size.width;
-    const ratio = isLandscape ? (size.width - 300) / (size.height - 40) : size.height / size.width;
-
-    // React.useEffect(() => {
-    //     const session = localStorage.getItem('session');
-    //     if (!session) {
-    //         router.push('/');
-    //     }
-
-    //     const userSession: UserSession = JSON.parse(session ?? '');
-    //     setSession({
-    //         ...userSession,
-    //         selected_role: searchParams.get('role')
-    //     });
-    // }, []);
+    const ratio = isLandscape ? (size.width - 400) / (size.height - 70) : size.height / size.width;
 
    
 
@@ -154,17 +129,21 @@ export default function Roles() {
                         videoConstraints={{ facingMode: 'user', aspectRatio: ratio }}
                     />
                 </div>
-                <div className="bg-[#ffffff] rounded-md w-[400px]">
-                    <div className="py-2 px-4">
-                        <h1 className="text-black font-bold py-2">Transcript</h1>
+                <div className="bg-[#ffffff] rounded-md w-[500px] overflow-hidden">
+                    <div className="py-2 px-4 bg-[#eeee]">
+                        <h1 className="text-black font-bold py-2">Live Transcript</h1>
                     </div>
-                    <div>
+                    <div className="px-4 mt-4">
                         {
                             transcripts.map((message, index) => (
                                 <div key={index} className="flex flex-row">
-                                    <div className="flex flex-col">
-                                        <p>{message.role === "assistant" ? "Judith" : "You"}</p>
-                                        <p>{message.text}</p>
+                                    <div className="flex flex-col text-black">
+                                        <h3 className={cn("mt-2 text-sm font-bold", message.role === "assistant" ? "text-left" : "text-right")}>
+                                            {message.role === "assistant" ? "Judith" : "You"}
+                                        </h3>
+                                        <div className={cn("flex py-0 px-3 py-2 max-w-[90%] rounded-b-xl", message.role === "assistant" ? "justify-start bg-[#f9eebd] rounded-tl-none rounded-tr-xl" : "justify-end bg-[#eeeeee] rounded-tl-xl rounded-tr-none")}>
+                                            <p className="text-[13px] font-medium">{message.text}</p>
+                                        </div>
                                     </div>
                                 </div>
                             ))
